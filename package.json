@@ -1,0 +1,43 @@
+{
+  "name": "ui-boundary-helper",
+  "version": "0.1.0",
+  "description": "A Next.js development tool that visualizes Server Components, Client Components, Suspense, cache, and Server Actions with interactive UI boundaries.",
+  "license": "MIT",
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./next": {
+      "types": "./dist/next/index.d.ts",
+      "require": "./dist/next/index.js",
+      "default": "./dist/next/index.js"
+    }
+  },
+  "files": ["dist", "loaders", "README.md", "LICENSE"],
+  "scripts": {
+    "dev": "npm --prefix examples/next-app run dev",
+    "build": "tsc -p tsconfig.build.json",
+    "prepack": "npm run build"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18",
+    "next": ">=16"
+  },
+  "peerDependenciesMeta": {
+    "next": { "optional": true }
+  },
+  "dependencies": {
+    "typescript": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0"
+  }
+}

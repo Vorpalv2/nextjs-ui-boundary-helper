@@ -1,0 +1,406 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #f7f8fa;
+  color: #20232c;
+  font: 15px/1.6 ui-sans-serif, system-ui, sans-serif;
+}
+
+.demo {
+  max-width: 850px;
+  margin: 0 auto;
+  padding: 72px 24px;
+}
+
+.eyebrow {
+  color: #777b88;
+  font: 11px ui-monospace, monospace;
+  letter-spacing: 0.08em;
+}
+
+h1 {
+  margin: 8px 0;
+  font-size: 38px;
+  letter-spacing: -1.5px;
+}
+
+.intro {
+  max-width: 620px;
+  color: #686c79;
+}
+
+.health-link {
+  margin-top: 20px;
+}
+
+.health-link a,
+.health-page header > a {
+  color: #5f56d5;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.health-link a:hover,
+.health-page header > a:hover {
+  text-decoration: underline;
+}
+
+.health-page header > a {
+  display: inline-block;
+  margin-top: 8px;
+}
+
+.health-shell {
+  margin-top: 38px;
+  border: 1px solid #e4e5eb;
+  border-radius: 12px;
+  background: #fff;
+  padding: 24px;
+}
+
+.health-shell-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.health-shell-heading h2,
+.health-card h2 {
+  margin: 4px 0;
+  font-size: 18px;
+}
+
+.health-shell-heading .eyebrow,
+.health-card .eyebrow,
+.health-client-panel .eyebrow,
+.health-cache-card .eyebrow {
+  margin: 0;
+}
+
+.health-button {
+  border: 1px solid #deddf5;
+  border-radius: 7px;
+  background: #f3f2ff;
+  padding: 8px 12px;
+  color: #5f56d5;
+  font: 12px ui-monospace, monospace;
+  cursor: pointer;
+}
+
+.health-card,
+.health-skeleton {
+  min-height: 125px;
+  border: 1px solid #e9eaf0;
+  border-radius: 9px;
+  background: #fff;
+  padding: 20px;
+}
+
+.health-card {
+  margin-top: 56px;
+}
+
+.health-card > p:last-of-type,
+.health-client-panel > p:not(.eyebrow),
+.health-cache-card > p:last-child {
+  color: #777b87;
+  font-size: 13px;
+}
+
+.health-client-panel {
+  margin-top: 24px;
+  border: 1px solid #eeeef2;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.health-cache-card {
+  border-radius: 7px;
+  background: #f5faf7;
+  padding: 16px;
+}
+
+.health-nested-slot {
+  margin-top: 56px;
+}
+
+.health-cache-slot {
+  margin-top: 88px;
+}
+
+.health-only-layer {
+  margin-top: 16px;
+  padding: 12px;
+  border: 1px solid #e8e8ee;
+  border-radius: 8px;
+}
+
+.health-server-only-layer {
+  background: #fff7f6;
+}
+
+.health-client-only-layer {
+  background: #f4f7ff;
+}
+
+.health-only-layer-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.health-only-layer .eyebrow {
+  margin: 0;
+}
+
+.health-nested-server-only-layer {
+  margin-top: 12px;
+}
+
+.health-cache-card strong {
+  display: block;
+  margin-top: 8px;
+}
+
+.health-action-form {
+  margin-top: 12px;
+}
+
+.health-action-button {
+  border: 1px solid #deddf5;
+  border-radius: 7px;
+  background: #f3f2ff;
+  padding: 7px 10px;
+  color: #5f56d5;
+  font: 11px ui-monospace, monospace;
+  cursor: pointer;
+}
+
+.health-action-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.health-action-status {
+  color: #218a5b;
+  font-size: 12px;
+}
+
+.health-skeleton {
+  margin: 8px 0;
+  border-style: dashed;
+  border-color: #d4a34e;
+  background: #fffaf0;
+  color: #8a6b35;
+}
+
+.intro code,
+pre code {
+  font: 12px ui-monospace, monospace;
+}
+
+.example,
+.integration {
+  margin-top: 34px;
+  border: 1px solid #e4e5eb;
+  border-radius: 12px;
+  background: #fff;
+  padding: 22px;
+}
+
+.section-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.section-heading h2 {
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: -0.4px;
+}
+
+.section-heading .eyebrow {
+  margin: 0 0 4px;
+}
+
+.dev-note {
+  color: #868995;
+  font: 11px ui-monospace, monospace;
+}
+
+.demo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+  margin: 28px 0;
+  padding: 6px;
+}
+
+.demo-card,
+.skeleton {
+  min-height: 105px;
+  border: 1px solid #e9eaf0;
+  border-radius: 8px;
+  background: #fff;
+  padding: 17px;
+}
+
+.counter-row {
+  display: flex;
+  min-height: 67px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.nested-boundary-slot {
+  margin-top: 100px;
+}
+
+.counter-row strong {
+  display: block;
+  margin-top: 7px;
+  font-size: 14px;
+}
+
+.round-action {
+  width: 30px;
+  height: 30px;
+  border: 1px solid #deddf5;
+  border-radius: 7px;
+  background: #f3f2ff;
+  color: #5f56d5;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.round-action:hover {
+  background: #e9e7ff;
+}
+
+.demo-card strong {
+  display: block;
+  margin-top: 7px;
+  font-size: 14px;
+}
+
+.demo-card p {
+  margin: 5px 0;
+  color: #7d808b;
+  font-size: 12px;
+}
+
+.skeleton {
+  border-style: dashed;
+  border-color: #d4a34e;
+  background: #fffaf0;
+  color: #8a6b35;
+  font-size: 13px;
+}
+
+.refresh-action {
+  margin-top: 8px;
+  border: 1px solid #deddf5;
+  border-radius: 6px;
+  background: #f3f2ff;
+  padding: 6px 9px;
+  color: #5f56d5;
+  font: 11px ui-monospace, monospace;
+  cursor: pointer;
+}
+
+.demo-card form {
+  margin-top: 58px;
+}
+
+.action-note {
+  margin: 0 6px 20px;
+  color: #777b87;
+  font-size: 11px;
+}
+
+.action-note code {
+  color: #5f56d5;
+  font-family: ui-monospace, monospace;
+}
+
+.donut-callout {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  border-top: 1px solid #eeeef2;
+  padding-top: 16px;
+  color: #777b87;
+  font-size: 12px;
+}
+
+.donut-callout strong {
+  color: #252833;
+}
+
+.donut-callout code {
+  border-radius: 5px;
+  background: #f3f2ff;
+  padding: 5px 7px;
+  color: #5f56d5;
+  font: 11px ui-monospace, monospace;
+}
+
+.integration {
+  overflow: hidden;
+  padding: 0;
+}
+
+.integration summary {
+  padding: 15px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.integration pre {
+  overflow: auto;
+  margin: 0;
+  background: #242630;
+  padding: 18px 20px;
+  color: #e2e3e9;
+  font: 12px/1.7 ui-monospace, monospace;
+}
+
+.footnote {
+  margin-top: 17px;
+  color: #898c96;
+  font-size: 11px;
+}
+
+@media (max-width: 760px) {
+  .demo {
+    padding: 40px 16px;
+  }
+
+  .section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .demo-grid {
+    grid-template-columns: 1fr;
+    column-gap: 22px;
+    row-gap: 140px;
+  }
+
+  .intro {
+    font-size: 14px;
+  }
+}
