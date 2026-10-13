@@ -2,6 +2,8 @@
 
 A Next.js App Router development tool that automatically annotates Server Components, Client Components, Suspense boundaries, cache directives, and Server Actions with interactive visual overlays.
 
+See [information.md](./information.md) for the meaning of popup fields, render-time measurements, directive labels, and toolbar controls.
+
 ## Install
 
 ```bash
