@@ -1,0 +1,46 @@
+name: Publish GitHub Package
+
+on:
+  push:
+    tags:
+      - "github-package-v*"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://npm.pkg.github.com
+          scope: "@vorpalv2"
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter ui-boundary-helper build
+
+      - name: Prepare scoped GitHub Packages copy
+        shell: bash
+        run: |
+          set -euo pipefail
+          package_dir="$RUNNER_TEMP/github-package"
+          mkdir -p "$package_dir"
+          tarball="$(npm pack --ignore-scripts --pack-destination "$RUNNER_TEMP")"
+          tar -xzf "$RUNNER_TEMP/$tarball" -C "$package_dir" --strip-components=1
+          npm pkg set name="@vorpalv2/ui-boundary-helper" --prefix "$package_dir"
+          npm pkg set publishConfig.registry="https://npm.pkg.github.com" --prefix "$package_dir"
+          npm pkg delete scripts --prefix "$package_dir"
+
+      - name: Publish to GitHub Packages
+        run: npm publish "$RUNNER_TEMP/github-package" --registry=https://npm.pkg.github.com --access=public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
