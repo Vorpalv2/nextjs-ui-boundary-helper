@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { BoundaryContext } from "./boundary-context";
 import { boundaryKinds, type BoundaryKind } from "./boundary-kind";
 import { BoundaryToolbar } from "./boundary-toolbar";
@@ -19,6 +19,10 @@ export function BoundaryProvider({
   const [boundariesVisible, setBoundariesVisible] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [suspenseStatuses, setSuspenseStatuses] = useState<Record<string, "waiting" | "resolved">>({});
+  const [suspenseDurations, setSuspenseDurations] = useState<Record<string, number | null>>({});
+  const [actionDurations, setActionDurations] = useState<Record<string, number | null>>({});
+  const suspenseStartedAt = useRef<Record<string, number>>({});
+  const suspenseStatusesRef = useRef<Record<string, "waiting" | "resolved">>({});
   const [tintBackgrounds, setTintBackgrounds] = useState(true);
   const [visibleKinds, setVisibleKinds] = useState<Record<BoundaryKind, boolean>>(() =>
     Object.fromEntries(boundaryKinds.map((kind) => [kind, true])) as Record<BoundaryKind, boolean>,
@@ -33,7 +37,23 @@ export function BoundaryProvider({
     setTintedKinds((current) => ({ ...current, [kind]: enabled }));
   };
   const reportSuspenseStatus = (id: string, status: "waiting" | "resolved") => {
-    setSuspenseStatuses((current) => current[id] === status ? current : { ...current, [id]: status });
+    if (suspenseStatusesRef.current[id] === status) return;
+    suspenseStatusesRef.current[id] = status;
+    setSuspenseStatuses((current) => ({ ...current, [id]: status }));
+
+    if (status === "waiting") {
+      suspenseStartedAt.current[id] = performance.now();
+      setSuspenseDurations((durations) => ({ ...durations, [id]: null }));
+      return;
+    }
+
+    const startedAt = suspenseStartedAt.current[id];
+    const duration = startedAt === undefined ? null : performance.now() - startedAt;
+    setSuspenseDurations((durations) => ({ ...durations, [id]: duration }));
+    delete suspenseStartedAt.current[id];
+  };
+  const reportActionDuration = (id: string, duration: number | null) => {
+    setActionDurations((current) => current[id] === duration ? current : { ...current, [id]: duration });
   };
 
   return (
@@ -48,7 +68,10 @@ export function BoundaryProvider({
       setKindVisibility,
       setKindTint,
       suspenseStatuses,
+      suspenseDurations,
       reportSuspenseStatus,
+      actionDurations,
+      reportActionDuration,
       searchQuery,
       setSearchQuery,
     }}>

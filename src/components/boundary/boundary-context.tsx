@@ -14,7 +14,10 @@ export type BoundaryContextValue = {
   setKindVisibility: (kind: BoundaryKind, visible: boolean) => void;
   setKindTint: (kind: BoundaryKind, enabled: boolean) => void;
   suspenseStatuses: Record<string, SuspenseStatus>;
+  suspenseDurations: Record<string, number | null>;
   reportSuspenseStatus: (id: string, status: SuspenseStatus) => void;
+  actionDurations: Record<string, number | null>;
+  reportActionDuration: (id: string, duration: number | null) => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
 };

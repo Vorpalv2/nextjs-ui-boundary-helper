@@ -41,12 +41,16 @@ export function transformBoundaries(source: string, fileName: string) {
   const fileLabel = fileName.split(/[\\/]/).pop() ?? fileName;
   let needsImport = false;
   let needsSuspenseReporterImport = false;
+  let needsActionReporterImport = false;
   let generatedName = "__UiBoundaryDebug";
   let suffix = 0;
   while (source.includes(generatedName)) generatedName = `__UiBoundaryDebug${++suffix}`;
   let generatedReporterName = "__UiBoundarySuspenseStatus";
   let reporterSuffix = 0;
   while (source.includes(generatedReporterName)) generatedReporterName = `__UiBoundarySuspenseStatus${++reporterSuffix}`;
+  let generatedActionReporterName = "__UiBoundaryActionTiming";
+  let actionReporterSuffix = 0;
+  while (source.includes(generatedActionReporterName)) generatedActionReporterName = `__UiBoundaryActionTiming${++actionReporterSuffix}`;
 
   const factory = ts.factory;
   let transformationContext: ts.TransformationContext;
@@ -57,6 +61,8 @@ export function transformBoundaries(source: string, fileName: string) {
     name: string,
     metadata?: ComponentMetadata,
     suspenseId?: string,
+    renderTime?: ts.Expression,
+    actionId?: string,
   ) => {
     needsImport = true;
     const attributes: ts.JsxAttributeLike[] = [
@@ -64,6 +70,12 @@ export function transformBoundaries(source: string, fileName: string) {
     ];
     if (suspenseId) {
       attributes.push(factory.createJsxAttribute(factory.createIdentifier("suspenseId"), factory.createStringLiteral(suspenseId)));
+    }
+    if (renderTime) {
+      attributes.push(factory.createJsxAttribute(factory.createIdentifier("renderTimeMs"), factory.createJsxExpression(undefined, renderTime)));
+    }
+    if (actionId) {
+      attributes.push(factory.createJsxAttribute(factory.createIdentifier("actionId"), factory.createStringLiteral(actionId)));
     }
     if (metadata) {
       attributes.push(
@@ -114,9 +126,13 @@ export function transformBoundaries(source: string, fileName: string) {
     if (isComponentRenderMethod(node)) {
       const kinds = getFunctionKinds(node, moduleKind, moduleDirectives);
       const metadata = getComponentMetadata(node, sourceFile, source);
+      const startedAt = factory.createIdentifier(createTimingVariableName(node, source));
       const transformedBody = visitComponentBody(node.body!, visitor, (expression) => {
-        return containsJsx(expression) ? wrap(expression, kinds, fileLabel, metadata) : expression;
+        return containsJsx(expression)
+          ? wrap(expression, kinds, fileLabel, metadata, undefined, elapsedExpression(startedAt, factory))
+          : expression;
       }, transformationContext);
+      const timedBody = insertAfterDirectivePrologue(transformedBody, createTimingStart(startedAt, factory));
       return factory.updateMethodDeclaration(
         node,
         node.modifiers,
@@ -126,7 +142,7 @@ export function transformBoundaries(source: string, fileName: string) {
         node.typeParameters,
         node.parameters,
         node.type,
-        transformedBody,
+        timedBody,
       );
     }
 
@@ -134,10 +150,17 @@ export function transformBoundaries(source: string, fileName: string) {
       const name = fileLabel;
       const kinds = getFunctionKinds(node, moduleKind, moduleDirectives);
       const metadata = getComponentMetadata(node, sourceFile, source);
+      const startedAt = factory.createIdentifier(createTimingVariableName(node, source));
 
       if (ts.isArrowFunction(node) && !ts.isBlock(node.body)) {
         const body = ts.visitNode(node.body, visitor) as ts.Expression;
-        const transformedBody = containsJsx(body) ? wrap(body, kinds, name, metadata) : body;
+        const transformedBody = containsJsx(body)
+          ? wrap(body, kinds, name, metadata, undefined, elapsedExpression(startedAt, factory))
+          : body;
+        const timedBody = factory.createBlock([
+          createTimingStart(startedAt, factory),
+          factory.createReturnStatement(transformedBody),
+        ], true);
         return factory.updateArrowFunction(
           node,
           node.modifiers,
@@ -145,14 +168,17 @@ export function transformBoundaries(source: string, fileName: string) {
           node.parameters,
           node.type,
           node.equalsGreaterThanToken,
-          transformedBody,
+          timedBody,
         );
       }
       if (!node.body || !ts.isBlock(node.body)) return node;
 
       const transformedBody = visitComponentBody(node.body, visitor, (expression) => {
-        return containsJsx(expression) ? wrap(expression, kinds, name, metadata) : expression;
+        return containsJsx(expression)
+          ? wrap(expression, kinds, name, metadata, undefined, elapsedExpression(startedAt, factory))
+          : expression;
       }, transformationContext);
+      const timedBody = insertAfterDirectivePrologue(transformedBody, createTimingStart(startedAt, factory));
       if (ts.isFunctionDeclaration(node)) {
         return factory.updateFunctionDeclaration(
           node,
@@ -162,7 +188,7 @@ export function transformBoundaries(source: string, fileName: string) {
           node.typeParameters,
           node.parameters,
           node.type,
-          transformedBody,
+          timedBody,
         );
       }
       if (ts.isFunctionExpression(node)) {
@@ -174,7 +200,7 @@ export function transformBoundaries(source: string, fileName: string) {
           node.typeParameters,
           node.parameters,
           node.type,
-          transformedBody,
+          timedBody,
         );
       }
       return factory.updateArrowFunction(
@@ -184,7 +210,7 @@ export function transformBoundaries(source: string, fileName: string) {
         node.parameters,
         node.type,
         node.equalsGreaterThanToken,
-        transformedBody,
+        timedBody,
       );
     }
 
@@ -201,7 +227,17 @@ export function transformBoundaries(source: string, fileName: string) {
 
       const actionForm = getActionForm(visited, sourceFile);
       if (actionForm) {
-        return wrap(visited, ["server-action"], actionForm, findActionMetadata(actionForm, sourceFile, source));
+        const actionId = `${fileName}:${node.pos}`;
+        needsActionReporterImport = true;
+        return wrap(
+          addActionTimingReporter(visited, actionId, generatedActionReporterName, factory),
+          ["server-action"],
+          actionForm,
+          findActionMetadata(actionForm, sourceFile, source),
+          undefined,
+          undefined,
+          actionId,
+        );
       }
       return visited;
     }
@@ -210,7 +246,17 @@ export function transformBoundaries(source: string, fileName: string) {
       const visited = ts.visitEachChild(node, visitor, transformationContext);
       if (visited.tagName.getText(sourceFile) === "form" && hasActionAttribute(visited.attributes)) {
         const actionName = getActionAttributeName(visited.attributes, sourceFile) ?? "inlineServerAction";
-        return wrap(visited, ["server-action"], actionName, findActionMetadata(actionName, sourceFile, source));
+        const actionId = `${fileName}:${node.pos}`;
+        needsActionReporterImport = true;
+        return wrap(
+          addActionTimingReporterToSelfClosing(visited, actionId, generatedActionReporterName, factory),
+          ["server-action"],
+          actionName,
+          findActionMetadata(actionName, sourceFile, source),
+          undefined,
+          undefined,
+          actionId,
+        );
       }
       return visited;
     }
@@ -239,6 +285,9 @@ export function transformBoundaries(source: string, fileName: string) {
         factory.createImportSpecifier(false, factory.createIdentifier("DebugBoundary"), factory.createIdentifier(generatedName)),
         ...(needsSuspenseReporterImport
           ? [factory.createImportSpecifier(false, factory.createIdentifier("SuspenseStatusReporter"), factory.createIdentifier(generatedReporterName))]
+          : []),
+        ...(needsActionReporterImport
+          ? [factory.createImportSpecifier(false, factory.createIdentifier("ActionTimingReporter"), factory.createIdentifier(generatedActionReporterName))]
           : []),
       ]),
     ),
@@ -312,6 +361,88 @@ function addSuspenseStatusReporters(
   );
 
   return factory.updateJsxElement(suspense, opening, [resolvedMarker, ...suspense.children], suspense.closingElement);
+}
+
+function addActionTimingReporter(
+  form: ts.JsxElement,
+  id: string,
+  reporterName: string,
+  factory: ts.NodeFactory,
+) {
+  const reporter = createActionTimingReporter(id, reporterName, factory);
+  return factory.updateJsxElement(
+    form,
+    form.openingElement,
+    [reporter, ...form.children],
+    form.closingElement,
+  );
+}
+
+function addActionTimingReporterToSelfClosing(
+  form: ts.JsxSelfClosingElement,
+  id: string,
+  reporterName: string,
+  factory: ts.NodeFactory,
+) {
+  const opening = factory.createJsxOpeningElement(form.tagName, form.typeArguments, form.attributes);
+  const closing = factory.createJsxClosingElement(form.tagName);
+  return factory.createJsxElement(opening, [createActionTimingReporter(id, reporterName, factory)], closing);
+}
+
+function createActionTimingReporter(id: string, reporterName: string, factory: ts.NodeFactory) {
+  return factory.createJsxSelfClosingElement(
+    factory.createIdentifier(reporterName),
+    undefined,
+    factory.createJsxAttributes([
+      factory.createJsxAttribute(factory.createIdentifier("id"), factory.createStringLiteral(id)),
+    ]),
+  );
+}
+
+function createTimingVariableName(node: ts.Node, source: string) {
+  const baseName = `__uiBoundaryStartedAt_${Math.max(0, node.pos)}`;
+  let name = baseName;
+  let suffix = 0;
+  while (source.includes(name)) name = `${baseName}_${++suffix}`;
+  return name;
+}
+
+function createTimingStart(identifier: ts.Identifier, factory: ts.NodeFactory) {
+  return factory.createVariableStatement(
+    undefined,
+    factory.createVariableDeclarationList([
+      factory.createVariableDeclaration(identifier, undefined, undefined, performanceNow(factory)),
+    ],
+    ts.NodeFlags.Const),
+  );
+}
+
+function elapsedExpression(identifier: ts.Identifier, factory: ts.NodeFactory) {
+  return factory.createBinaryExpression(
+    performanceNow(factory),
+    factory.createToken(ts.SyntaxKind.MinusToken),
+    identifier,
+  );
+}
+
+function performanceNow(factory: ts.NodeFactory) {
+  return factory.createCallExpression(
+    factory.createPropertyAccessExpression(
+      factory.createPropertyAccessExpression(factory.createIdentifier("globalThis"), "performance"),
+      "now",
+    ),
+    undefined,
+    [],
+  );
+}
+
+function insertAfterDirectivePrologue(body: ts.Block, statement: ts.Statement) {
+  const directiveCount = getDirectives(body.statements).length;
+  return ts.factory.updateBlock(body, [
+    ...body.statements.slice(0, directiveCount),
+    statement,
+    ...body.statements.slice(directiveCount),
+  ]);
 }
 
 function findFirstComponentName(nodes: readonly ts.Node[], sourceFile: ts.SourceFile): string | undefined {

@@ -15,6 +15,8 @@ type DebugBoundaryProps = {
   detail?: string;
   metadata?: ComponentMetadata;
   suspenseId?: string;
+  actionId?: string;
+  renderTimeMs?: number;
   className?: string;
 };
 
@@ -37,7 +39,7 @@ const BOUNDARY_KIND_INSET = LABEL_HEIGHT + LABEL_GAP;
 const NESTED_BOUNDARY_INSET = 6;
 
 /** Explicitly labels a region. Its visual annotation is portaled over the page. */
-export function DebugBoundary({ children, kind, kinds, name, detail, metadata, suspenseId, className }: DebugBoundaryProps) {
+export function DebugBoundary({ children, kind, kinds, name, detail, metadata, suspenseId, actionId, renderTimeMs, className }: DebugBoundaryProps) {
   const context = useBoundaryContext();
   const debug = context?.debug ?? process.env.NODE_ENV !== "production";
   const boundariesVisible = context?.boundariesVisible ?? true;
@@ -48,6 +50,8 @@ export function DebugBoundary({ children, kind, kinds, name, detail, metadata, s
   const tintedBoundaryKinds = visibleBoundaryKinds.filter((boundaryKind) => context?.tintedKinds[boundaryKind] ?? true);
   // Before either client marker reports, treat the boundary as waiting for its first state signal.
   const suspenseStatus = suspenseId ? context?.suspenseStatuses[suspenseId] ?? "waiting" : undefined;
+  const suspenseDuration = suspenseId ? context?.suspenseDurations[suspenseId] : undefined;
+  const actionDuration = actionId ? context?.actionDurations[actionId] : undefined;
   const contentRef = useRef<HTMLDivElement>(null);
   const [bounds, setBounds] = useState<Bounds | null>(null);
   const [metrics, setMetrics] = useState<ComponentMetrics | null>(null);
@@ -207,6 +211,10 @@ export function DebugBoundary({ children, kind, kinds, name, detail, metadata, s
       </div>
       {detail ? <div style={popupDetailStyle}>{detail}</div> : null}
       <div style={popupRowsStyle}>
+        <PopupRow
+          label="Render time"
+          value={getTimingLabel(popupKind, renderTimeMs, suspenseStatus, suspenseDuration, actionDuration)}
+        />
         {popupKind === "suspense" ? (
           <PopupRow label="Suspense status" value={suspenseStatus === "waiting" ? "Waiting for content" : "Resolved"} />
         ) : null}
@@ -353,6 +361,40 @@ function PopupRow({ label, value }: { label: string; value: string }) {
 
 function yesNo(value: boolean) {
   return value ? "Yes" : "No";
+}
+
+function getTimingLabel(
+  kind: BoundaryKind,
+  renderTimeMs: number | undefined,
+  suspenseStatus: "waiting" | "resolved" | undefined,
+  suspenseDuration: number | null | undefined,
+  actionDuration: number | null | undefined,
+) {
+  if (kind === "suspense") {
+    if (suspenseStatus === "waiting") return "Waiting for content…";
+    if (suspenseDuration === null) return "No client-observed fallback";
+    if (suspenseDuration !== undefined) return `${formatDuration(suspenseDuration)} · fallback wait`;
+    return "Observing…";
+  }
+
+  if (kind === "server-action") {
+    if (actionDuration === null) return "Running… · client round trip";
+    if (actionDuration !== undefined) return `${formatDuration(actionDuration)} · client round trip`;
+    return "Submit to measure · client round trip";
+  }
+
+  if (renderTimeMs === undefined || !Number.isFinite(renderTimeMs)) return "Measuring…";
+  const measurement = kind === "cache" || kind === "cache-private" || kind === "cache-remote"
+    ? "cached generation"
+    : kind === "server" || kind === "server-only"
+      ? "server render"
+      : "client render";
+  return `${formatDuration(renderTimeMs)} · ${measurement}`;
+}
+
+function formatDuration(durationMs: number) {
+  if (durationMs < 0.1) return "<0.1 ms";
+  return `${durationMs < 10 ? durationMs.toFixed(1) : Math.round(durationMs)} ms`;
 }
 
 function metadataRowsForKind(kind: BoundaryKind, metadata: ComponentMetadata | undefined, usesCacheDirective: boolean) {

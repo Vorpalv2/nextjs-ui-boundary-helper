@@ -71,6 +71,10 @@ import { SuspenseBoundary } from "ui-boundary-helper";
 
 The Next integration reads directives during compilation, not by inspecting runtime component objects. It adds a boundary around each detected local component, including the default page export, named component functions, components passed to wrappers such as `memo`, and React class `render` methods. A file with `'use client'` is labeled as a Client Component; files without it are labeled as Server Components by default. Function-level `'use cache'` directives receive cache and server annotations on that component. `<Suspense>` boundaries receive a persistent Suspense annotation, with the wrapped component name available on hover; forms using Server Actions receive annotations as well. A Server Action marked with `'use server'` is a function, not a Server Component. The `server-only` and `client-only` package markers are also supported, but are not directives.
 
+### Render-time measurements
+
+Each popup includes a timing value. Component timings measure the component function's execution up to its JSX return; async Server Components include work they await. They do not measure the full React subtree render, network transfer, or browser paint. A cached component reports its cache-generation timing, which can be reused on cache hits rather than measuring the cache lookup. Suspense reports the client-observed fallback wait when the fallback is observed, and Server Actions report the browser-observed submit-to-completion round trip rather than server-only execution time.
+
 ### How cached component inputs work
 
 Next.js uses the cached function or component and its serializable inputs to determine which result can be reused. Pass every value that can change the result into the cached component. A different input combination gets its own cache entry; a later render with the same inputs can reuse that entry while it is valid.
