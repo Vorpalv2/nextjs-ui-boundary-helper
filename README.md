@@ -71,6 +71,36 @@ import { SuspenseBoundary } from "ui-boundary-helper";
 
 The Next integration reads directives during compilation, not by inspecting runtime component objects. It adds a boundary around each detected local component, including the default page export, named component functions, components passed to wrappers such as `memo`, and React class `render` methods. A file with `'use client'` is labeled as a Client Component; files without it are labeled as Server Components by default. Function-level `'use cache'` directives receive cache and server annotations on that component. `<Suspense>` boundaries receive a persistent Suspense annotation, with the wrapped component name available on hover; forms using Server Actions receive annotations as well. A Server Action marked with `'use server'` is a function, not a Server Component. The `server-only` and `client-only` package markers are also supported, but are not directives.
 
+### How cached component inputs work
+
+Next.js uses the cached function or component and its serializable inputs to determine which result can be reused. Pass every value that can change the result into the cached component. A different input combination gets its own cache entry; a later render with the same inputs can reuse that entry while it is valid.
+
+For example, a product variant can be cached by product ID and color:
+
+```tsx
+type CachedBagProps = {
+  productId: string;
+  color: "green" | "blue";
+};
+
+async function CachedBag({ productId, color }: CachedBagProps) {
+  "use cache";
+
+  const bag = await getBagVariant(productId, color);
+
+  return (
+    <article>
+      <img src={bag.imageUrl} alt={`${color} ${bag.name}`} />
+      <h2>{bag.name}</h2>
+      <p>Color: {color}</p>
+      <p>{bag.price}</p>
+    </article>
+  );
+}
+```
+
+`("bag-123", "green")` and `("bag-123", "blue")` are separate entries. Another request for `("bag-123", "green")` can reuse the green result. Include every result-changing input, such as size or locale, too. If almost every input combination is unique, caching may have few hits. A cached component's rendered markup and image URL may be reused; the image file itself is handled by the browser or image CDN cache separately. Set an appropriate cache lifetime or invalidate entries when product data changes. See [Next.js' `use cache` documentation](https://nextjs.org/docs/app/api-reference/directives/use-cache) for cache keys, serialization, and invalidation.
+
 The React wrapper uses React and React DOM. The optional Next integration uses TypeScript to transform app source files during builds.
 
 ## Local example
