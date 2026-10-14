@@ -133,11 +133,14 @@ export function DebugBoundary({ children, kind, kinds, name, detail, metadata, s
     };
   }, [debug, children, boundaryKinds.length]);
 
+  const popupKind = hoveredLabel && visibleBoundaryKinds.includes(hoveredLabel) ? hoveredLabel : undefined;
+  const popupOpen = debug && boundariesVisible && matchesSearch && mounted && popupAnchor !== null && popupKind !== undefined;
+
   const overlay = debug && boundariesVisible && matchesSearch && mounted && bounds && visibleBoundaryKinds.length ? createPortal(
     <div aria-hidden="true" style={overlayStackStyle}>
       {context?.tintBackgrounds !== false
         ? tintedBoundaryKinds.map((boundaryKind) => (
-            <div key={`tint-${boundaryKind}`} style={componentTintStyle(bounds, boundaryKindTint(boundaryKind))} />
+            <div key={`tint-${boundaryKind}`} style={componentTintStyle(bounds, boundaryKindTint(boundaryKind, popupOpen && popupKind === boundaryKind))} />
           ))
         : null}
       <div style={overlayStyle(bounds, boundaryKindColor(visibleBoundaryKinds[0]))} />
@@ -168,8 +171,7 @@ export function DebugBoundary({ children, kind, kinds, name, detail, metadata, s
     document.body,
   ) : null;
 
-  const popupKind = hoveredLabel && visibleBoundaryKinds.includes(hoveredLabel) ? hoveredLabel : undefined;
-  const popup = debug && boundariesVisible && matchesSearch && mounted && popupAnchor && popupKind ? createPortal(
+  const popup = popupOpen && popupAnchor && popupKind ? createPortal(
     <div
       style={popupStyle(popupAnchor, boundaryKindColor(popupKind), popupTransparent)}
       role="tooltip"

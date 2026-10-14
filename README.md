@@ -56,7 +56,7 @@ const nextConfig: NextConfig = {};
 export default withBoundaryDebug(nextConfig);
 ```
 
-Then add the provider once in the root `app/layout.tsx`. The layout remains a Server Component; the provider receives `children` as a slot.
+Then add `BoundaryProvider` once in the root `app/layout.tsx` as the **first direct child of `<body>`**, wrapping your other providers and app content. The layout remains a Server Component; the provider receives `children` as a slot.
 
 ```tsx
 import { BoundaryProvider } from "ui-boundary-helper";
@@ -85,6 +85,8 @@ import { DebugBoundary } from "ui-boundary-helper";
 ```
 
 Automatic labels use `boundary type | component-file.tsx`, such as `Client Component | client-counter.tsx` or `Server Component | page.tsx`. A Server Action is labeled `Server Action`. If you manually provide `detail`, it appears as a third field. Client annotations are blue, server annotations are red, cache annotations are green, and Suspense annotations are amber. Nested components receive separate outlines, so a server component containing a client component with a cached server child appears as nested layers. Labels sit above their outlines with visible spacing; the dotted borders and labels overlay the page without changing its layout.
+
+While a boundary's popup is open, its background tint becomes darker to make the selected region stand out. Pinning the popup keeps that highlight active; closing it restores the normal tint. This follows the toolbar's global and per-kind background-color settings.
 
 For a region that represents multiple concepts, pass several `kinds`; their labels and outlines stack above and around the same region:
 

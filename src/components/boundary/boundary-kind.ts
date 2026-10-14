@@ -32,7 +32,14 @@ export function boundaryKindColor(kind: BoundaryKind) {
   return "#218a5b";
 }
 
-export function boundaryKindTint(kind: BoundaryKind) {
+export function boundaryKindTint(kind: BoundaryKind, active = false) {
+  if (active) {
+    if (kind === "server" || kind === "server-only") return "hsla(0, 72%, 40%, 0.28)";
+    if (kind === "server-action") return "hsla(270, 75%, 44%, 0.30)";
+    if (kind === "client" || kind === "client-only") return "hsla(218, 90%, 40%, 0.28)";
+    if (kind === "suspense") return "hsla(44, 88%, 36%, 0.32)";
+    return "hsla(150, 70%, 28%, 0.28)";
+  }
   if (kind === "server" || kind === "server-only") return "hsla(0, 72%, 56%, 0.12)";
   if (kind === "server-action") return "hsla(270, 75%, 60%, 0.14)";
   if (kind === "client" || kind === "client-only") return "hsla(218, 90%, 56%, 0.12)";
