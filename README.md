@@ -6,7 +6,40 @@ See [information.md](./information.md) for the meaning of popup fields, render-t
 
 ## Install
 
+Use the package manager already used by your project:
+
 ```bash
+# npm
+npm install ui-boundary-helper
+
+# pnpm
+pnpm add ui-boundary-helper
+
+# Yarn
+yarn add ui-boundary-helper
+
+# Bun
+bun add ui-boundary-helper
+```
+
+### Troubleshooting npm install
+
+If npm reports `Cannot read properties of null (reading 'matches')`, it may have encountered dependency links left by another package manager or a local linked package. This error alone does not indicate a Next.js compatibility problem. See the [npm issue for this error](https://github.com/npm/cli/issues/9459).
+
+If your project uses pnpm, Yarn, or Bun, use its matching install command above. For an npm project, try rebuilding the installed dependencies from the project root while keeping `package-lock.json`:
+
+```bash
+# macOS / Linux
+rm -rf node_modules
+npm install
+npm install ui-boundary-helper
+```
+
+On Windows PowerShell:
+
+```powershell
+Remove-Item -Recurse -Force node_modules
+npm install
 npm install ui-boundary-helper
 ```
 
