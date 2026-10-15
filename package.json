@@ -30,6 +30,7 @@
     "dist",
     "loaders",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "scripts": {

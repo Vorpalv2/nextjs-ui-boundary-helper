@@ -4,6 +4,8 @@ A Next.js App Router development tool that automatically annotates Server Compon
 
 See [information.md](./information.md) for the meaning of popup fields, render-time measurements, directive labels, and toolbar controls.
 
+See the [changelog](./CHANGELOG.md) for changes in upcoming and previous releases.
+
 ## Install
 
 Use the package manager already used by your project:
