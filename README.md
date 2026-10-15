@@ -90,6 +90,8 @@ While a boundary's popup is open, its background tint becomes darker to make the
 
 Use the minimize icon next to the pin icon to collapse popups to just the component name and controls. The minimize and transparency settings apply to every open popup; each popup keeps its own pin state. Click the expand icon to restore all fields. Minimizing works with pinned popups and keeps the boundary highlight active. Boundary visibility, background tint, per-kind visibility and tint, popup minimize, and popup transparency settings are saved in local storage and restored after a page refresh.
 
+Choose **Reset UI settings** in the boundary toolbar to restore annotation visibility, colors, type filters, popup display, and toolbar appearance to their defaults.
+
 For a region that represents multiple concepts, pass several `kinds`; their labels and outlines stack above and around the same region:
 
 ```tsx

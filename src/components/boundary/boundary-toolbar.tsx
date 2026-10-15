@@ -198,6 +198,27 @@ export function BoundaryToolbar() {
               { value: "large", label: "Large" },
             ]} palette={palette} />
           </div>
+          <button
+            type="button"
+            style={{ ...resetSettingsButtonStyle, color: palette.text, borderColor: palette.divider }}
+            onClick={() => {
+              context.setBoundariesVisible(true);
+              context.setTintBackgrounds(true);
+              context.setPopupMinimized(false);
+              context.setPopupTransparent(false);
+              context.setSearchQuery("");
+              boundaryKinds.forEach((kind) => {
+                context.setKindVisibility(kind, true);
+                context.setKindTint(kind, true);
+              });
+              setTheme("dark");
+              setPosition("bottom-left");
+              setSize("medium");
+              setFiltersOpen(false);
+            }}
+          >
+            Reset UI settings
+          </button>
         </section>
       ) : null}
 
@@ -413,6 +434,17 @@ const filterKindNameStyle: CSSProperties = {
 const filterSwatchStyle: CSSProperties = { width: 8, height: 8, flex: "0 0 auto", borderRadius: "50%" };
 const sectionDividerStyle: CSSProperties = { height: 1, margin: "5px 0", background: "#ffffff24" };
 const settingsListStyle: CSSProperties = { display: "grid", gap: 8, padding: "4px 0 2px" };
+const resetSettingsButtonStyle: CSSProperties = {
+  width: "100%",
+  marginTop: 12,
+  padding: "8px 10px",
+  border: "1px solid",
+  borderRadius: 7,
+  background: "transparent",
+  font: "inherit",
+  textAlign: "left",
+  cursor: "pointer",
+};
 const searchRowStyle: CSSProperties = { display: "flex", alignItems: "center", gap: 8, margin: "2px 0 5px" };
 const searchInputStyle: CSSProperties = { width: "100%", minWidth: 0, boxSizing: "border-box", padding: "8px 9px", border: "1px solid", borderRadius: 6, outline: "none", font: "inherit" };
 const clearSearchStyle: CSSProperties = { flex: "0 0 auto", marginLeft: -34, width: 26, height: 26, padding: 0, border: 0, background: "transparent", fontSize: 18, cursor: "pointer" };
