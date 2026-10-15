@@ -25,7 +25,17 @@ export type BoundaryContextValue = {
   reportActionDuration: (id: string, duration: number | null) => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+  boundaries: BoundaryEntry[];
+  registerBoundary: (boundary: BoundaryEntry) => void;
+  unregisterBoundary: (id: string) => void;
+  focusedBoundaryId: string | null;
+  setFocusedBoundaryId: (id: string | null) => void;
+  renderHistories: Record<string, RenderHistory>;
+  reportBoundaryRender: (id: string, renderTimeMs: number) => void;
 };
+
+export type BoundaryEntry = { id: string; name: string; kinds: BoundaryKind[] };
+export type RenderHistory = { count: number; samples: number[] };
 
 export type SuspenseStatus = "waiting" | "resolved";
 

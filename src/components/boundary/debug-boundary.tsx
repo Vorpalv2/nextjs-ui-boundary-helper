@@ -1,7 +1,7 @@
 "use client";
 
 import { createPortal } from "react-dom";
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { boundaryKindColor, boundaryKindLabels, boundaryKindTint, type BoundaryKind } from "./boundary-kind";
 import { useBoundaryContext } from "./boundary-context";
 
@@ -54,6 +54,8 @@ export function DebugBoundary({ children, kind, kinds, name, detail, metadata, s
   const suspenseDuration = suspenseId ? context?.suspenseDurations[suspenseId] : undefined;
   const actionDuration = actionId ? context?.actionDurations[actionId] : undefined;
   const contentRef = useRef<HTMLDivElement>(null);
+  const boundaryId = useId();
+  const lastReportedRenderTime = useRef<number | undefined>(undefined);
   const [bounds, setBounds] = useState<Bounds | null>(null);
   const [metrics, setMetrics] = useState<ComponentMetrics | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -64,6 +66,35 @@ export function DebugBoundary({ children, kind, kinds, name, detail, metadata, s
   const popupCloseTimeout = useRef<number | null>(null);
   const popupMinimized = context?.popupMinimized ?? false;
   const popupTransparent = context?.popupTransparent ?? false;
+
+  useEffect(() => {
+    if (!debug || !context) return;
+    context.registerBoundary({ id: boundaryId, name, kinds: boundaryKinds });
+    return () => context.unregisterBoundary(boundaryId);
+  }, [debug, context?.registerBoundary, context?.unregisterBoundary, boundaryId, name, boundaryKinds.join(" ")]);
+
+  useEffect(() => {
+    if (!debug || !context || renderTimeMs === undefined || !Number.isFinite(renderTimeMs)) return;
+    if (lastReportedRenderTime.current === renderTimeMs) return;
+    lastReportedRenderTime.current = renderTimeMs;
+    context.reportBoundaryRender(boundaryId, renderTimeMs);
+  }, [debug, context?.reportBoundaryRender, boundaryId, renderTimeMs]);
+
+  useEffect(() => {
+    if (context?.focusedBoundaryId !== boundaryId || !debug || !settingsLoaded) return;
+    contentRef.current?.firstElementChild?.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
+    const frame = window.requestAnimationFrame(() => {
+      const overlayNode = Array.from(document.querySelectorAll<HTMLElement>("[data-boundary-id]"))
+        .find((element) => element.dataset.boundaryId === boundaryId);
+      const label = overlayNode?.querySelector<HTMLElement>("[data-boundary-label]");
+      const firstKind = visibleBoundaryKinds[0];
+      if (!label || !firstKind) return;
+      const rect = label.getBoundingClientRect();
+      setHoveredLabel(firstKind);
+      setPopupAnchor({ left: rect.left, bottom: rect.bottom });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [context?.focusedBoundaryId, boundaryId, debug, settingsLoaded, visibleBoundaryKinds.map((item) => context?.visibleKinds[item]).join(" ")]);
 
   const cancelPopupClose = () => {
     if (popupCloseTimeout.current !== null) {
@@ -139,7 +170,7 @@ export function DebugBoundary({ children, kind, kinds, name, detail, metadata, s
   const popupOpen = debug && settingsLoaded && boundariesVisible && matchesSearch && mounted && popupAnchor !== null && popupKind !== undefined;
 
   const overlay = debug && settingsLoaded && boundariesVisible && matchesSearch && mounted && bounds && visibleBoundaryKinds.length ? createPortal(
-    <div aria-hidden="true" style={overlayStackStyle}>
+    <div aria-hidden="true" data-boundary-id={boundaryId} style={overlayStackStyle}>
       {context?.tintBackgrounds !== false
         ? tintedBoundaryKinds.map((boundaryKind) => (
             <div key={`tint-${boundaryKind}`} style={componentTintStyle(bounds, boundaryKindTint(boundaryKind, popupOpen && popupKind === boundaryKind))} />
@@ -149,6 +180,7 @@ export function DebugBoundary({ children, kind, kinds, name, detail, metadata, s
       <div style={annotationRowStyle(bounds)}>
         {visibleBoundaryKinds.map((boundaryKind) => (
           <div
+            data-boundary-label
             key={`label-${boundaryKind}`}
             style={labelStyle(boundaryKindColor(boundaryKind))}
             onMouseEnter={(event) => {
@@ -231,6 +263,9 @@ export function DebugBoundary({ children, kind, kinds, name, detail, metadata, s
               label="Render time"
               value={getTimingLabel(popupKind, renderTimeMs, suspenseStatus, suspenseDuration, actionDuration)}
             />
+            {context?.renderHistories[boundaryId] ? (
+              <PopupRow label="Render history" value={renderHistoryLabel(context.renderHistories[boundaryId])} />
+            ) : null}
             {popupKind === "suspense" ? (
               <PopupRow label="Suspense status" value={suspenseStatus === "waiting" ? "Waiting for content" : "Resolved"} />
             ) : null}
@@ -413,6 +448,12 @@ function getTimingLabel(
 function formatDuration(durationMs: number) {
   if (durationMs < 0.1) return "<0.1 ms";
   return `${durationMs < 10 ? durationMs.toFixed(1) : Math.round(durationMs)} ms`;
+}
+
+function renderHistoryLabel(history: { count: number; samples: number[] }) {
+  const average = history.samples.reduce((sum, duration) => sum + duration, 0) / history.samples.length;
+  const recent = history.samples.map((duration) => formatDuration(duration)).join(", ");
+  return `${history.count} render${history.count === 1 ? "" : "s"} · avg ${formatDuration(average)} · recent: ${recent}`;
 }
 
 function metadataRowsForKind(kind: BoundaryKind, metadata: ComponentMetadata | undefined, usesCacheDirective: boolean) {

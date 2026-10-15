@@ -69,6 +69,9 @@ export function BoundaryToolbar() {
   if (!mounted || !context?.debug) return null;
 
   const palette = theme === "dark" ? darkPalette : lightPalette;
+  const matchingBoundaries = [...context.boundaries]
+    .filter((boundary) => !context.searchQuery.trim() || boundary.name.toLocaleLowerCase().includes(context.searchQuery.trim().toLocaleLowerCase()))
+    .sort((left, right) => left.name.localeCompare(right.name));
   const launcherSize = size === "compact" ? 36 : size === "large" ? 50 : 42;
   const dockPosition = toolbarPositionStyle(position);
   const isTop = position.startsWith("top");
@@ -151,6 +154,39 @@ export function BoundaryToolbar() {
               </button>
             ) : null}
           </label>
+
+          <div style={navigatorStyle}>
+            <div style={{ ...navigatorHeadingStyle, color: palette.muted }}>
+              <span>Boundaries</span>
+              <span>{matchingBoundaries.length}</span>
+            </div>
+            <div style={navigatorListStyle}>
+              {matchingBoundaries.slice(0, 30).map((boundary) => (
+                <button
+                  key={boundary.id}
+                  type="button"
+                  style={{
+                    ...navigatorEntryStyle,
+                    color: palette.text,
+                    background: context.focusedBoundaryId === boundary.id ? palette.divider : "transparent",
+                  }}
+                  title={`${boundary.name} · ${boundary.kinds.map((kind) => boundaryKindLabels[kind]).join(", ")}`}
+                  onClick={() => {
+                    context.setSearchQuery(boundary.name);
+                    context.setBoundariesVisible(true);
+                    boundary.kinds.forEach((kind) => context.setKindVisibility(kind, true));
+                    context.setFocusedBoundaryId(boundary.id);
+                  }}
+                >
+                  <span style={navigatorNameStyle}>{boundary.name}</span>
+                  <span style={{ ...navigatorKindStyle, color: palette.muted }}>
+                    {boundary.kinds.map((kind) => boundaryKindLabels[kind]).join(" · ")}
+                  </span>
+                </button>
+              ))}
+              {matchingBoundaries.length === 0 ? <span style={{ ...navigatorEmptyStyle, color: palette.muted }}>No boundaries found</span> : null}
+            </div>
+          </div>
 
           {filtersOpen ? (
             <div style={filterListStyle}>
@@ -446,6 +482,13 @@ const resetSettingsButtonStyle: CSSProperties = {
   cursor: "pointer",
 };
 const searchRowStyle: CSSProperties = { display: "flex", alignItems: "center", gap: 8, margin: "2px 0 5px" };
+const navigatorStyle: CSSProperties = { display: "grid", gap: 5, margin: "0 0 8px" };
+const navigatorHeadingStyle: CSSProperties = { display: "flex", justifyContent: "space-between", fontSize: 11, fontWeight: 700 };
+const navigatorListStyle: CSSProperties = { display: "grid", maxHeight: 156, overflowY: "auto", gap: 2 };
+const navigatorEntryStyle: CSSProperties = { display: "grid", gap: 1, width: "100%", padding: "5px 7px", border: 0, borderRadius: 5, textAlign: "left", font: "inherit", cursor: "pointer" };
+const navigatorNameStyle: CSSProperties = { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 11 };
+const navigatorKindStyle: CSSProperties = { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 9 };
+const navigatorEmptyStyle: CSSProperties = { padding: 7, fontSize: 11 };
 const searchInputStyle: CSSProperties = { width: "100%", minWidth: 0, boxSizing: "border-box", padding: "8px 9px", border: "1px solid", borderRadius: 6, outline: "none", font: "inherit" };
 const clearSearchStyle: CSSProperties = { flex: "0 0 auto", marginLeft: -34, width: 26, height: 26, padding: 0, border: 0, background: "transparent", fontSize: 18, cursor: "pointer" };
 const settingRowStyle: CSSProperties = { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 12 };

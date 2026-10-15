@@ -6,6 +6,8 @@ Notable changes to `ui-boundary-helper` are documented here. Entries under **Unr
 
 ### Added
 
+- Added a boundary navigator with search and selection that scrolls to a component and opens its popup.
+- Added per-boundary render history with total render count, recent average, and the ten latest measurements.
 - Added popup minimize and expand controls. Minimize and transparency preferences apply to all boundary popups, while pinning remains independent for each popup.
 - Added a darker tint for the boundary whose popup is open. The highlight follows the background tint settings and stays active while the popup is pinned or minimized.
 - Added persistent settings for boundary visibility, background tint, per-kind visibility and tint, popup minimize and transparency, and toolbar appearance.

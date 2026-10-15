@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { BoundaryContext } from "./boundary-context";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { BoundaryContext, type BoundaryEntry, type RenderHistory } from "./boundary-context";
 import { boundaryKinds, type BoundaryKind } from "./boundary-kind";
 import { BoundaryToolbar } from "./boundary-toolbar";
 
@@ -32,6 +32,10 @@ export function BoundaryProvider({
   const [suspenseStatuses, setSuspenseStatuses] = useState<Record<string, "waiting" | "resolved">>({});
   const [suspenseDurations, setSuspenseDurations] = useState<Record<string, number | null>>({});
   const [actionDurations, setActionDurations] = useState<Record<string, number | null>>({});
+  const [boundaries, setBoundaries] = useState<BoundaryEntry[]>([]);
+  const [focusedBoundaryId, setFocusedBoundaryId] = useState<string | null>(null);
+  const [renderHistories, setRenderHistories] = useState<Record<string, RenderHistory>>({});
+  const boundaryCleanupTimers = useRef<Record<string, number>>({});
   const suspenseStartedAt = useRef<Record<string, number>>({});
   const suspenseStatusesRef = useRef<Record<string, "waiting" | "resolved">>({});
   const [tintBackgrounds, setTintBackgrounds] = useState(true);
@@ -84,6 +88,39 @@ export function BoundaryProvider({
   const setKindTint = (kind: BoundaryKind, enabled: boolean) => {
     setTintedKinds((current) => ({ ...current, [kind]: enabled }));
   };
+  const registerBoundary = useCallback((boundary: BoundaryEntry) => {
+    const cleanupTimer = boundaryCleanupTimers.current[boundary.id];
+    if (cleanupTimer !== undefined) {
+      window.clearTimeout(cleanupTimer);
+      delete boundaryCleanupTimers.current[boundary.id];
+    }
+    setBoundaries((current) => {
+      const existing = current.findIndex((entry) => entry.id === boundary.id);
+      if (existing < 0) return [...current, boundary];
+      if (current[existing].name === boundary.name && current[existing].kinds.join(" ") === boundary.kinds.join(" ")) return current;
+      return current.map((entry) => entry.id === boundary.id ? boundary : entry);
+    });
+  }, []);
+  const unregisterBoundary = useCallback((id: string) => {
+    boundaryCleanupTimers.current[id] = window.setTimeout(() => {
+      setBoundaries((current) => current.filter((entry) => entry.id !== id));
+      setRenderHistories((current) => {
+        if (!(id in current)) return current;
+        const next = { ...current };
+        delete next[id];
+        return next;
+      });
+      delete boundaryCleanupTimers.current[id];
+    }, 0);
+  }, []);
+  const reportBoundaryRender = useCallback((id: string, renderTimeMs: number) => {
+    if (!Number.isFinite(renderTimeMs) || renderTimeMs < 0) return;
+    setRenderHistories((current) => {
+      const history = current[id] ?? { count: 0, samples: [] };
+      const samples = [...history.samples, renderTimeMs].slice(-10);
+      return { ...current, [id]: { count: history.count + 1, samples } };
+    });
+  }, []);
   const reportSuspenseStatus = (id: string, status: "waiting" | "resolved") => {
     if (suspenseStatusesRef.current[id] === status) return;
     suspenseStatusesRef.current[id] = status;
@@ -127,6 +164,13 @@ export function BoundaryProvider({
       reportActionDuration,
       searchQuery,
       setSearchQuery,
+      boundaries,
+      registerBoundary,
+      unregisterBoundary,
+      focusedBoundaryId,
+      setFocusedBoundaryId,
+      renderHistories,
+      reportBoundaryRender,
     }}>
       {children}
       {debug ? <BoundaryToolbar /> : null}

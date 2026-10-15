@@ -6,6 +6,8 @@ See [information.md](./information.md) for the meaning of popup fields, render-t
 
 See the [changelog](./CHANGELOG.md) for changes in upcoming and previous releases.
 
+The boundary toolbar includes a searchable navigator for detected components. Select a boundary to scroll to it and open its popup. Popup render history shows its total observed render count, recent average, and up to ten latest timings.
+
 ## Install
 
 Use the package manager already used by your project:
