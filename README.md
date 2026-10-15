@@ -88,7 +88,7 @@ Automatic labels use `boundary type | component-file.tsx`, such as `Client Compo
 
 While a boundary's popup is open, its background tint becomes darker to make the selected region stand out. Pinning the popup keeps that highlight active; closing it restores the normal tint. This follows the toolbar's global and per-kind background-color settings.
 
-Use the minimize icon next to the pin icon to collapse a popup to just its component name and controls. Click the expand icon to restore all fields. Minimizing works with pinned popups and keeps the boundary highlight active.
+Use the minimize icon next to the pin icon to collapse popups to just the component name and controls. The minimize and transparency settings apply to every open popup; each popup keeps its own pin state. Click the expand icon to restore all fields. Minimizing works with pinned popups and keeps the boundary highlight active. Boundary visibility, background tint, per-kind visibility and tint, popup minimize, and popup transparency settings are saved in local storage and restored after a page refresh.
 
 For a region that represents multiple concepts, pass several `kinds`; their labels and outlines stack above and around the same region:
 

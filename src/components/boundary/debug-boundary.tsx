@@ -42,6 +42,7 @@ const NESTED_BOUNDARY_INSET = 6;
 export function DebugBoundary({ children, kind, kinds, name, detail, metadata, suspenseId, actionId, renderTimeMs, className }: DebugBoundaryProps) {
   const context = useBoundaryContext();
   const debug = context?.debug ?? process.env.NODE_ENV !== "production";
+  const settingsLoaded = context?.settingsLoaded ?? true;
   const boundariesVisible = context?.boundariesVisible ?? true;
   const normalizedSearch = context?.searchQuery.trim().toLocaleLowerCase() ?? "";
   const matchesSearch = !normalizedSearch || name.toLocaleLowerCase().includes(normalizedSearch);
@@ -58,11 +59,11 @@ export function DebugBoundary({ children, kind, kinds, name, detail, metadata, s
   const [mounted, setMounted] = useState(false);
   const [hoveredLabel, setHoveredLabel] = useState<BoundaryKind | null>(null);
   const [popupAnchor, setPopupAnchor] = useState<{ left: number; bottom: number } | null>(null);
-  const [popupTransparent, setPopupTransparent] = useState(false);
   const [popupPinned, setPopupPinned] = useState(false);
-  const [popupMinimized, setPopupMinimized] = useState(false);
   const popupPinnedRef = useRef(false);
   const popupCloseTimeout = useRef<number | null>(null);
+  const popupMinimized = context?.popupMinimized ?? false;
+  const popupTransparent = context?.popupTransparent ?? false;
 
   const cancelPopupClose = () => {
     if (popupCloseTimeout.current !== null) {
@@ -135,9 +136,9 @@ export function DebugBoundary({ children, kind, kinds, name, detail, metadata, s
   }, [debug, children, boundaryKinds.length]);
 
   const popupKind = hoveredLabel && visibleBoundaryKinds.includes(hoveredLabel) ? hoveredLabel : undefined;
-  const popupOpen = debug && boundariesVisible && matchesSearch && mounted && popupAnchor !== null && popupKind !== undefined;
+  const popupOpen = debug && settingsLoaded && boundariesVisible && matchesSearch && mounted && popupAnchor !== null && popupKind !== undefined;
 
-  const overlay = debug && boundariesVisible && matchesSearch && mounted && bounds && visibleBoundaryKinds.length ? createPortal(
+  const overlay = debug && settingsLoaded && boundariesVisible && matchesSearch && mounted && bounds && visibleBoundaryKinds.length ? createPortal(
     <div aria-hidden="true" style={overlayStackStyle}>
       {context?.tintBackgrounds !== false
         ? tintedBoundaryKinds.map((boundaryKind) => (
@@ -206,7 +207,7 @@ export function DebugBoundary({ children, kind, kinds, name, detail, metadata, s
             aria-label={popupMinimized ? "Expand popup" : "Minimize popup"}
             aria-pressed={popupMinimized}
             title={popupMinimized ? "Expand popup" : "Minimize popup"}
-            onClick={() => setPopupMinimized((minimized) => !minimized)}
+            onClick={() => context?.setPopupMinimized(!popupMinimized)}
           >
             <MinimizeIcon minimized={popupMinimized} />
           </button>
@@ -216,7 +217,7 @@ export function DebugBoundary({ children, kind, kinds, name, detail, metadata, s
           aria-label={popupTransparent ? "Restore popup opacity" : "Make popup half transparent"}
           aria-pressed={popupTransparent}
           title={popupTransparent ? "Restore opacity" : "Make popup half transparent"}
-          onClick={() => setPopupTransparent((transparent) => !transparent)}
+          onClick={() => context?.setPopupTransparent(!popupTransparent)}
         >
           <EyeIcon crossedOut={popupTransparent} />
         </button>

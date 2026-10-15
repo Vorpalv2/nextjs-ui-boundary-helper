@@ -5,11 +5,16 @@ import type { BoundaryKind } from "./boundary-kind";
 
 export type BoundaryContextValue = {
   debug: boolean;
+  settingsLoaded: boolean;
   boundariesVisible: boolean;
   tintBackgrounds: boolean;
+  popupMinimized: boolean;
+  popupTransparent: boolean;
   visibleKinds: Record<BoundaryKind, boolean>;
   tintedKinds: Record<BoundaryKind, boolean>;
   setTintBackgrounds: (enabled: boolean) => void;
+  setPopupMinimized: (minimized: boolean) => void;
+  setPopupTransparent: (transparent: boolean) => void;
   setBoundariesVisible: (visible: boolean) => void;
   setKindVisibility: (kind: BoundaryKind, visible: boolean) => void;
   setKindTint: (kind: BoundaryKind, enabled: boolean) => void;

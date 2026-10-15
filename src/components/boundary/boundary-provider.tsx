@@ -1,9 +1,20 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { BoundaryContext } from "./boundary-context";
 import { boundaryKinds, type BoundaryKind } from "./boundary-kind";
 import { BoundaryToolbar } from "./boundary-toolbar";
+
+const BOUNDARY_SETTINGS_KEY = "ui-boundary-helper:boundary-settings";
+
+type SavedBoundarySettings = {
+  boundariesVisible: boolean;
+  tintBackgrounds: boolean;
+  popupMinimized: boolean;
+  popupTransparent: boolean;
+  visibleKinds: Partial<Record<BoundaryKind, boolean>>;
+  tintedKinds: Partial<Record<BoundaryKind, boolean>>;
+};
 
 type BoundaryProviderProps = {
   children: ReactNode;
@@ -24,12 +35,49 @@ export function BoundaryProvider({
   const suspenseStartedAt = useRef<Record<string, number>>({});
   const suspenseStatusesRef = useRef<Record<string, "waiting" | "resolved">>({});
   const [tintBackgrounds, setTintBackgrounds] = useState(true);
+  const [popupMinimized, setPopupMinimized] = useState(false);
+  const [popupTransparent, setPopupTransparent] = useState(false);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [visibleKinds, setVisibleKinds] = useState<Record<BoundaryKind, boolean>>(() =>
     Object.fromEntries(boundaryKinds.map((kind) => [kind, true])) as Record<BoundaryKind, boolean>,
   );
   const [tintedKinds, setTintedKinds] = useState<Record<BoundaryKind, boolean>>(() =>
     Object.fromEntries(boundaryKinds.map((kind) => [kind, true])) as Record<BoundaryKind, boolean>,
   );
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(BOUNDARY_SETTINGS_KEY);
+      if (saved) {
+        const settings = JSON.parse(saved) as Partial<SavedBoundarySettings>;
+        if (typeof settings.boundariesVisible === "boolean") setBoundariesVisible(settings.boundariesVisible);
+        if (typeof settings.tintBackgrounds === "boolean") setTintBackgrounds(settings.tintBackgrounds);
+        if (typeof settings.popupMinimized === "boolean") setPopupMinimized(settings.popupMinimized);
+        if (typeof settings.popupTransparent === "boolean") setPopupTransparent(settings.popupTransparent);
+        if (settings.visibleKinds) setVisibleKinds((current) => ({ ...current, ...pickKindSettings(settings.visibleKinds) }));
+        if (settings.tintedKinds) setTintedKinds((current) => ({ ...current, ...pickKindSettings(settings.tintedKinds) }));
+      }
+    } catch {
+      // Ignore unavailable storage or stale settings and use defaults.
+    }
+    setSettingsLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (!settingsLoaded) return;
+    try {
+      window.localStorage.setItem(BOUNDARY_SETTINGS_KEY, JSON.stringify({
+        boundariesVisible,
+        tintBackgrounds,
+        popupMinimized,
+        popupTransparent,
+        visibleKinds,
+        tintedKinds,
+      } satisfies SavedBoundarySettings));
+    } catch {
+      // Settings still work for this session when storage is unavailable.
+    }
+  }, [settingsLoaded, boundariesVisible, tintBackgrounds, popupMinimized, popupTransparent, visibleKinds, tintedKinds]);
   const setKindVisibility = (kind: BoundaryKind, visible: boolean) => {
     setVisibleKinds((current) => ({ ...current, [kind]: visible }));
   };
@@ -59,11 +107,16 @@ export function BoundaryProvider({
   return (
     <BoundaryContext.Provider value={{
       debug,
+      settingsLoaded,
       boundariesVisible,
       tintBackgrounds,
+      popupMinimized,
+      popupTransparent,
       visibleKinds,
       tintedKinds,
       setTintBackgrounds,
+      setPopupMinimized,
+      setPopupTransparent,
       setBoundariesVisible,
       setKindVisibility,
       setKindTint,
@@ -79,4 +132,10 @@ export function BoundaryProvider({
       {debug ? <BoundaryToolbar /> : null}
     </BoundaryContext.Provider>
   );
+}
+
+function pickKindSettings(settings: Partial<Record<BoundaryKind, boolean>> | undefined) {
+  return Object.fromEntries(boundaryKinds.flatMap((kind) =>
+    typeof settings?.[kind] === "boolean" ? [[kind, settings[kind]]] : [],
+  )) as Partial<Record<BoundaryKind, boolean>>;
 }
