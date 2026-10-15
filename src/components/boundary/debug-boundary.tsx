@@ -60,6 +60,7 @@ export function DebugBoundary({ children, kind, kinds, name, detail, metadata, s
   const [popupAnchor, setPopupAnchor] = useState<{ left: number; bottom: number } | null>(null);
   const [popupTransparent, setPopupTransparent] = useState(false);
   const [popupPinned, setPopupPinned] = useState(false);
+  const [popupMinimized, setPopupMinimized] = useState(false);
   const popupPinnedRef = useRef(false);
   const popupCloseTimeout = useRef<number | null>(null);
 
@@ -178,9 +179,9 @@ export function DebugBoundary({ children, kind, kinds, name, detail, metadata, s
       onMouseEnter={cancelPopupClose}
       onMouseLeave={schedulePopupClose}
     >
-      <div style={popupHeaderStyle}>
-        <div style={popupTitleStyle}>
-          <span style={popupIdentityLabelStyle}>{popupKind === "server-action" ? "Function" : "Name"}:</span>{" "}
+      <div style={popupMinimized ? { ...popupHeaderStyle, marginBottom: 0, borderBottom: 0 } : popupHeaderStyle}>
+        <div style={popupMinimized ? { ...popupTitleStyle, paddingBottom: 0 } : popupTitleStyle}>
+          {!popupMinimized ? <><span style={popupIdentityLabelStyle}>{popupKind === "server-action" ? "Function" : "Name"}:</span>{" "}</> : null}
           {popupKind === "server-action" ? formatFunctionName(name) : name}
         </div>
         <div style={popupControlsStyle}>
@@ -199,6 +200,16 @@ export function DebugBoundary({ children, kind, kinds, name, detail, metadata, s
           >
             <PinIcon pinned={popupPinned} />
           </button>
+          <button
+            type="button"
+            style={{ ...transparencyButtonStyle, ...(popupMinimized ? activePopupControlStyle : {}) }}
+            aria-label={popupMinimized ? "Expand popup" : "Minimize popup"}
+            aria-pressed={popupMinimized}
+            title={popupMinimized ? "Expand popup" : "Minimize popup"}
+            onClick={() => setPopupMinimized((minimized) => !minimized)}
+          >
+            <MinimizeIcon minimized={popupMinimized} />
+          </button>
         <button
           type="button"
           style={transparencyButtonStyle}
@@ -211,22 +222,26 @@ export function DebugBoundary({ children, kind, kinds, name, detail, metadata, s
         </button>
         </div>
       </div>
-      {detail ? <div style={popupDetailStyle}>{detail}</div> : null}
-      <div style={popupRowsStyle}>
-        <PopupRow
-          label="Render time"
-          value={getTimingLabel(popupKind, renderTimeMs, suspenseStatus, suspenseDuration, actionDuration)}
-        />
-        {popupKind === "suspense" ? (
-          <PopupRow label="Suspense status" value={suspenseStatus === "waiting" ? "Waiting for content" : "Resolved"} />
-        ) : null}
-        {metadataRowsForKind(popupKind, metadata, boundaryKinds.some(isCacheKind)).map(({ label, value }) => (
-          <PopupRow key={label} label={label} value={value} />
-        ))}
-        <PopupRow label="Width" value={metrics ? `${metrics.width}px` : "Measuring…"} />
-        <PopupRow label="Height" value={metrics ? `${metrics.height}px` : "Measuring…"} />
-        <PopupRow label="Font" value={metrics?.font ?? "Measuring…"} />
-      </div>
+      {!popupMinimized ? (
+        <>
+          {detail ? <div style={popupDetailStyle}>{detail}</div> : null}
+          <div style={popupRowsStyle}>
+            <PopupRow
+              label="Render time"
+              value={getTimingLabel(popupKind, renderTimeMs, suspenseStatus, suspenseDuration, actionDuration)}
+            />
+            {popupKind === "suspense" ? (
+              <PopupRow label="Suspense status" value={suspenseStatus === "waiting" ? "Waiting for content" : "Resolved"} />
+            ) : null}
+            {metadataRowsForKind(popupKind, metadata, boundaryKinds.some(isCacheKind)).map(({ label, value }) => (
+              <PopupRow key={label} label={label} value={value} />
+            ))}
+            <PopupRow label="Width" value={metrics ? `${metrics.width}px` : "Measuring…"} />
+            <PopupRow label="Height" value={metrics ? `${metrics.height}px` : "Measuring…"} />
+            <PopupRow label="Font" value={metrics?.font ?? "Measuring…"} />
+          </div>
+        </>
+      ) : null}
     </div>,
     document.body,
   ) : null;
@@ -503,6 +518,15 @@ function EyeIcon({ crossedOut }: { crossedOut: boolean }) {
       <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
       <circle cx="12" cy="12" r="3" />
       {crossedOut ? <path d="m3 3 18 18" /> : null}
+    </svg>
+  );
+}
+
+function MinimizeIcon({ minimized }: { minimized: boolean }) {
+  return (
+    <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 12h14" />
+      {minimized ? <path d="M12 5v14" /> : null}
     </svg>
   );
 }
