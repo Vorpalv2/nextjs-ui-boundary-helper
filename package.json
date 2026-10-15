@@ -1,6 +1,6 @@
 {
   "name": "ui-boundary-helper",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "A Next.js development tool that visualizes Server Components, Client Components, Suspense, cache, and Server Actions with interactive UI boundaries.",
   "repository": {
     "type": "git",

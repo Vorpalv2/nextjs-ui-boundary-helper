@@ -1,8 +1,8 @@
 # Changelog
 
-Notable changes to `ui-boundary-helper` are documented here. Entries under **Unreleased** will be assigned a version and release date when that version is published.
+Notable changes to `ui-boundary-helper` are documented here. New work goes under **Unreleased** and moves into a versioned section when it is published.
 
-## Unreleased
+## [0.1.3] - 2026-10-15
 
 ### Added
 
